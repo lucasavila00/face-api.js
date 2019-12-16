@@ -5,6 +5,7 @@
   <script src="js/commons.js"></script>
   <script src="js/faceDetectionControls.js"></script>
   <script src="js/imageSelectionControls.js"></script>
+  <script src="js/opencv.js"></script>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.css">
   <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
@@ -36,6 +37,25 @@
         Ok
       </button>
       <!-- image_selection_control -->
+    </div>
+
+    <div class="row side-by-side">
+
+      <!-- face_detector_selection_control -->
+      <div id="select_solver_control" class="row input-field" style="margin-right: 20px;">
+        <select id="selectSolver">
+          <option value="0">SOLVEPNP_ITERATIVE</option>
+          <option value="1">SOLVEPNP_EPNP</option>
+          <!-- <option value="2">SOLVEPNP_P3P</option> -->
+          <option value="3">SOLVEPNP_DLS</option>
+          <option value="4">SOLVEPNP_UPNP</option>
+          <!-- <option value="5">SOLVEPNP_AP3P</option> -->
+          <!-- <option value="6">SOLVEPNP_IPPE</option> -->
+          <!-- <option value="7">SOLVEPNP_IPPE_SQUARE</option> -->
+        </select>
+        <label>Select PnP Solver</label>
+      </div>
+
     </div>
 
     <div class="row side-by-side">
@@ -145,6 +165,7 @@
 
   <script>
     let withBoxes = true
+    let selectedOpenCvMethoed = "0"
 
     function onChangeHideBoundingBoxes(e) {
       withBoxes = !$(e.target).prop('checked')
@@ -165,10 +186,138 @@
       faceapi.matchDimensions(canvas, inputImgEl)
       const resizedResults = faceapi.resizeResults(results, inputImgEl)
 
+      resizedResults.forEach((res) => {
+
+
+
+        const positions = res.landmarks.positions
+        const noseTip=positions[33]
+        const chin=positions[8]
+        const lefteyeleftcorner=positions[36]
+        const righteyerightcorner=positions[45]
+        const leftmouth=positions[48]
+        const rightmouth=positions[54]
+        // cvv
+        focal_length = inputImgEl.width
+        center = [inputImgEl.width/2, inputImgEl.height/2]
+
+        imagePoints = cv.matFromArray(6, 2, cv.CV_64F, [
+            noseTip._x,
+            noseTip._y,
+            chin._x,
+            chin._y,
+            lefteyeleftcorner._x,
+            lefteyeleftcorner._y,
+            righteyerightcorner._x,
+            righteyerightcorner._y,
+            leftmouth._x,
+            leftmouth._y,
+            rightmouth._x,
+            rightmouth._y
+        ]);
+
+        objectPoints = cv.matFromArray(6, 3, cv.CV_64F, [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            -330.0,
+            -65.0,
+            -225.0,
+            170.0,
+            -135.0,
+            225.0,
+            170.0,
+            -135.0,
+            -150.0,
+            -150.0,
+            -125.0,
+            150.0,
+            -150.0,
+            -125.0
+        ]);
+        cameraMatrix = cv.matFromArray(3, 3, cv.CV_64F, [focal_length, 0, center[0],
+            0, focal_length, center[1],
+              0, 0, 1]);
+        distCoeffs = cv.Mat.zeros(4, 1, cv.CV_64F);
+        rvec = new cv.Mat();
+        tvec = new cv.Mat();
+
+        cv.solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, false, parseInt(selectedOpenCvMethoed, 10))
+
+
+        pointf = cv.matFromArray(3, 1, cv.CV_64F, [0, 0, 1000])
+        outarrf = new cv.Mat();
+        jacobf = new cv.Mat();
+
+        cv.projectPoints(pointf, rvec, tvec, cameraMatrix, distCoeffs, outarrf, jacobf)
+
+        let frontx = outarrf.data64F[0]
+        let fronty = outarrf.data64F[1]
+
+        pointt = cv.matFromArray(3, 1, cv.CV_64F, [0, 1000, 0])
+        outarrt = new cv.Mat();
+        jacobt = new cv.Mat();
+
+        cv.projectPoints(pointt, rvec, tvec, cameraMatrix, distCoeffs, outarrt, jacobt)
+
+        let topx = outarrt.data64F[0]
+        let topy = outarrt.data64F[1]
+        
+
+
+        points = cv.matFromArray(3, 1, cv.CV_64F, [1000, 0, 0])
+        outarrs = new cv.Mat();
+        jacobs = new cv.Mat();
+
+        cv.projectPoints(points, rvec, tvec, cameraMatrix, distCoeffs, outarrs, jacobs)
+
+        let sidex = outarrs.data64F[0]
+        let sidey = outarrs.data64F[1]
+        
+
+
+
+        let ctx = canvas.getContext('2d')
+        ctx.strokeStyle = 'white'
+        ctx.fillStyle = 'white'
+        ctx.beginPath()
+        ctx.arc(frontx, fronty, 2, 0, 2 * Math.PI)
+        ctx.fill()
+        ctx.arc(noseTip._x, noseTip._y, 2, 0, 2 * Math.PI)
+        ctx.fill()
+
+        ctx.lineWidth =2;
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'red'
+        ctx.fillStyle = 'red'
+        ctx.moveTo(frontx, fronty);
+        ctx.lineTo(noseTip._x, noseTip._y);
+        ctx.stroke();
+
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'green'
+        ctx.fillStyle = 'green'
+        ctx.moveTo(topx, topy);
+        ctx.lineTo(noseTip._x, noseTip._y);
+        ctx.stroke();
+
+
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'blue'
+        ctx.fillStyle = 'blue'
+        ctx.moveTo(sidex, sidey);
+        ctx.lineTo(noseTip._x, noseTip._y);
+        ctx.stroke();
+      })
+
       if (withBoxes) {
         faceapi.draw.drawDetections(canvas, resizedResults)
+        faceapi.draw.drawFaceLandmarks(canvas, resizedResults)
       }
-      faceapi.draw.drawFaceLandmarks(canvas, resizedResults)
     }
 
     async function run() {
@@ -180,10 +329,28 @@
       updateResults()
     }
 
+
+    async function onCvChange(e) {
+      selectedOpenCvMethoed = e.target.value
+
+  // await changeFaceDetector(e.target.value)
+  updateResults()
+}
+
+    function initOpenCvControls() {
+  const faceDetectorSelect = $('#selectSolver')
+  faceDetectorSelect.val(selectedOpenCvMethoed)
+  faceDetectorSelect.on('change', onCvChange)
+  faceDetectorSelect.material_select()
+
+}
+
     $(document).ready(function() {
       renderNavBar('#navbar', 'face_landmark_detection')
+
       initImageSelectionControls()
       initFaceDetectionControls()
+      initOpenCvControls()
       run()
     })
   </script>
