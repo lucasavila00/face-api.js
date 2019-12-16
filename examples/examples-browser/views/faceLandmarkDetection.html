@@ -161,13 +161,14 @@
       const canvas = $('#overlay').get(0)
       faceapi.matchDimensions(canvas, inputImgEl)
       const resizedResults = faceapi.resizeResults(results, inputImgEl)
+      var t0 = performance.now();
 
       resizedResults.forEach((res) => {
 
 
 
         const positions = res.landmarks.positions
-        const noseTip=positions[33]
+        const noseTip=positions[30]
         const chin=positions[8]
         const lefteyeleftcorner=positions[36]
         const righteyerightcorner=positions[45]
@@ -219,7 +220,10 @@
         rvec = new cv.Mat();
         tvec = new cv.Mat();
 
-        cv.solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, false, parseInt(selectedOpenCvMethoed, 10))
+        cv.solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec
+        // , 
+        // false, parseInt(selectedOpenCvMethoed, 10)
+        )
 
 
         pointf = cv.matFromArray(3, 1, cv.CV_64F, [0, 0, 1000])
