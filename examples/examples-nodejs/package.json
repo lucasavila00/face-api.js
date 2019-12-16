@@ -2,11 +2,8 @@
   "author": "justadudewhohacks",
   "license": "MIT",
   "dependencies": {
-    "@tensorflow/tfjs-node": "1.2.3",
-    "canvas": "^2.5.0",
-    "face-api.js": "../../",
-    "tfjs-image-recognition-base": "^0.6.2",
-    "ts-node": "^8.3.0",
-    "typescript": "^3.6.3"
+    "@tensorflow/tfjs-node": "1.4.0",
+    "canvas": "^2.6.0",
+    "face-api.js": "../../"
   }
 }

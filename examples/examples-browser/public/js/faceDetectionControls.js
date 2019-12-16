@@ -1,6 +1,5 @@
 const SSD_MOBILENETV1 = "ssd_mobilenetv1";
 const TINY_FACE_DETECTOR = "tiny_face_detector";
-const MTCNN = "mtcnn";
 
 let selectedFaceDetector = SSD_MOBILENETV1;
 
@@ -20,15 +19,14 @@ function FuckingRound(num, prec) {
   const f = Math.pow(10, prec);
   return Math.floor(num * f) / f;
 }
+
 function getFaceDetectorOptions() {
   return selectedFaceDetector === SSD_MOBILENETV1
     ? new faceapi.SsdMobilenetv1Options({ minConfidence })
-    : selectedFaceDetector === TINY_FACE_DETECTOR
-    ? new faceapi.TinyFaceDetectorOptions({
+    : new faceapi.TinyFaceDetectorOptions({
         inputSize,
         scoreThreshold,
-      })
-    : new faceapi.MtcnnOptions({ minFaceSize });
+      });
 }
 
 function onIncreaseMinConfidence() {
@@ -103,6 +101,7 @@ function getCurrentFaceDetectionNet() {
   if (selectedFaceDetector === TINY_FACE_DETECTOR) {
     return faceapi.nets.tinyFaceDetector;
   }
+
   if (selectedFaceDetector === MTCNN) {
     return faceapi.nets.mtcnn;
   }
@@ -125,6 +124,7 @@ async function changeFaceDetector(detector) {
   faceDetectorSelect.material_select();
 
   $("#loader").show();
+
   if (!isFaceDetectionModelLoaded()) {
     await getCurrentFaceDetectionNet().load("/");
   }
